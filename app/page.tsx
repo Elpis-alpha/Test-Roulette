@@ -24,7 +24,9 @@ export default function Home() {
   const [selectedIndex, setSelectedIndex] = useState<string | number>("random");
   const [chosenItem, setChosenItem] = useState<string>();
   const [isSpinning, setIsSpinning] = useState(false);
-  const [rotation, setRotation] = useState(0);
+  // const [rotation, setRotation] = useState(0);
+  const rotationValueRef = useRef<number>(0);
+  const rotationRef = useRef<HTMLDivElement>(null);
   const offsetForPreviousSpin = useRef(-0.5);
 
   const numberOfTicks = 5;
@@ -54,6 +56,14 @@ export default function Home() {
   const spacePerItem = widthOfItem + spaceBetweenItems; // Total space per item rotation
   const easeOutQuad = (t: number) => t * (2 - t); // Custom easing function
 
+  const setRotationRef = (value: number) => {
+    if (!rotationRef.current) return toast.error("Please wait...");
+
+    const rotationValue = `translateX(-${value}px)`;
+    rotationRef.current.style.transform = rotationValue;
+    rotationValueRef.current = value;
+  };
+
   const handleSpin = async () => {
     if (isSpinning)
       return toast("The wheel is already spinning!", { icon: "🎡" });
@@ -80,7 +90,7 @@ export default function Home() {
     const previousSpinOffset = (originalLength - previousSpin) * spacePerItem; // Offset for the previous spin
     offsetForPreviousSpin.current = chosenItemIndex; // Update the offset for the next spin
 
-    const startRotation = rotation; // Start rotation based on the current rotation
+    const startRotation = rotationValueRef.current; // Start rotation based on the current rotation
     const endRotation =
       startRotation + previousSpinOffset + minRotation + spaceToChosenItem; // End rotation based on the chosen item
 
@@ -99,7 +109,7 @@ export default function Home() {
       const currentTick = easedProgress * numberOfTicks; // Current tick based on the easing progress
 
       // Update rotation based on easing
-      setRotation(startRotation + totalSpinLength * easedProgress);
+      setRotationRef(startRotation + totalSpinLength * easedProgress);
 
       // Play the tick sound based on the easing progress
       if (previousTick + 1 < currentTick) {
@@ -110,7 +120,7 @@ export default function Home() {
       if (progress < 1) {
         requestAnimationFrame(animate); // Continue animation
       } else {
-        setRotation(restartEndRotation);
+        setRotationRef(restartEndRotation);
         setIsSpinning(false);
         setChosenItem(undefined);
         audioEnd.current?.play(); // Play end sound after the animation completes
@@ -124,7 +134,7 @@ export default function Home() {
     if (isSpinning) return toast("The wheel is moving!", { icon: "🎡" });
     setIsSpinning(true);
 
-    const startRotation = rotation;
+    const startRotation = rotationValueRef.current;
     const endRotation = startRotation + spacePerItem * by;
     const totalDuration = 500;
     const totalSpinLength = endRotation - startRotation; // Total spin length
@@ -143,7 +153,7 @@ export default function Home() {
       const easedProgress = easeOutQuad(progress); // Use easing function for smooth deceleration
 
       // Update rotation based on easing
-      setRotation(startRotation + totalSpinLength * easedProgress);
+      setRotationRef(startRotation + totalSpinLength * easedProgress);
 
       if (progress < 1) {
         requestAnimationFrame(animate); // Continue animation
@@ -169,8 +179,9 @@ export default function Home() {
     <div className="w-full bg-white">
       <div className="w-full p-10 pb-0 overflow-hidden">
         <div
+          ref={rotationRef}
           style={{
-            transform: `translateX(-${rotation}px)`,
+            // transform: `translateX(-${rotation}px)`,
             transition: isSpinning ? "transform .05s linear" : "none",
           }}
           className="flex gap-6 w-full items-center justify-center"
